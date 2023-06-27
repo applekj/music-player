@@ -1,8 +1,15 @@
 import Vue from 'vue'
 import App from './App.vue'
+// import router from './router'
+// import './plugins/vant'
+// import './assets/css/base.less'
 
 Vue.config.productionTip = false
 
 new Vue({
-  render: h => h(App),
+    // router,
+    render: h => h(App),
+    beforeCreate() {
+        Vue.prototype.$bus = this
+    }
 }).$mount('#app')
