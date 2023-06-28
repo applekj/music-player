@@ -14,18 +14,5 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.audio_con {
-    height: 50px;
-    background-color: #f1f3f4;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
-
-    .myaudio {
-        width: 800px;
-        height: 40px;
-        margin-top: 5px;
-        outline: none;
-        background-color: #f1f3f4;
-    }
-}
+@import url('./index.less');
 </style>
