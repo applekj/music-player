@@ -1,120 +1,132 @@
 <template>
-    <div class="todo-container">
-        <div class="todo-wrap">
-            <!-- @addTodo是自定义事件，绑定在MyHeader组件实例上 -->
-            <MyHeader @addTodo="addTodo" />
-            <MyList :todos="todos" />
-            <MyFooter :todos="todos" @checkAllTodo="checkAllTodo" @deleteAllDone="deleteAllDone" />
+    <div class="wrap">
+        <div id="id" class="play_wrap">
+            <Search :musicList="musicList" @Home="handleSearch" />
+            <Center ref="center" :musicList="musicList" :musicPic="musicPic" :isPlaying="isPlaying"
+                :musicComment="musicComment" />
+            <Audio ref="audio" :musicUrl="musicUrl" />
+            <div class="video_con" v-show="isMVPlaying">
+                <video :src="mvUrl" controls autoplay></video>
+                <div class="mask" @click="hideMV"></div>
+            </div>
         </div>
     </div>
 </template>
 
 <script>
-import MyHeader from './components/MyHeader'
-import MyList from './components/MyList'
-import MyFooter from './components/MyFooter'
+import axios from './utils/axios'
+import Search from './components/Search'
+import Center from './components/Center'
+import Audio from './components/Audio'
 
 export default {
     name: 'App',
-    components: { MyHeader, MyList, MyFooter },
-    data() {
+    components: { Search, Center, Audio },
+    data: function () {
         return {
-            todos: JSON.parse(localStorage.getItem('todos')) || []
-        }
-    },
-    methods: {
-        //添加一个todo
-        addTodo(todoObj) {
-            this.todos.unshift(todoObj)
-        },
-        //勾选或取消勾选一个todo
-        checkTodo(id) {
-            this.todos = this.todos.map(item => {
-                if (id === item.id) {
-                    item.done = !item.done
-                }
-                return item
-            })
-        },
-        //删除todo
-        deleteTodo(id) {
-            this.todos = this.todos.filter(item => id !== item.id)
-        },
-        //全选或全不选
-        checkAllTodo(done) {
-            this.todos = this.todos.map(item => ({ ...item, done }))
-        },
-        //清除已完成任务
-        deleteAllDone() {
-            this.todos = this.todos.filter(item => !item.done)
-        },
-        updateTodo(id, title) {
-            this.todos = this.todos.map(item => ({ ...item, title: id === item.id ? title : item.title }))
-        }
-    },
-    watch: {
-        todos: {
-            deep: true,
-            handler(value) {
-                localStorage.setItem('todos', JSON.stringify(value))
-            }
+            musicList: [],
+            musicUrl: '',
+            musicPic: '',
+            musicComment: [],
+            isPlaying: false,
+            mvUrl: '',
+            isMVPlaying: false
         }
     },
     mounted() {
-        this.$bus.$on('checkTodo', this.checkTodo)
-        this.$bus.$on('deleteTodo', this.deleteTodo)
-        this.$bus.$on('updateTodo', this.updateTodo)
+        this.$refs.center.$on('playMusic', this.playMusic)
+        this.$refs.center.$on('playMV', this.playMV)
+
+        this.$refs.audio.$on('play', this.play)
+        this.$refs.audio.$on('pause', this.pause)
     },
     beforeDestroy() {
-        this.$bus.$off('checkTodo')
-        this.$bus.$off('deleteTodo')
-        this.$bus.$off('updateTodo')
-    }
+        this.$off()
+    },
+    methods: {
+        //查询歌曲
+        async handleSearch(value) {
+            const { result: { songs } } = await axios.get(`https://autumnfish.cn/search?keywords=${value}`)
+            this.musicList = songs
+        },
+        //播放歌曲
+        async playMusic(musicId) {
+            const musicInfo = await axios.get('https://autumnfish.cn/song/url?id=' + musicId)
+            const musicPicInfo = await axios.get('https://autumnfish.cn/song/detail?ids=' + musicId)
+            const commentInfo = await axios.get('https://autumnfish.cn/comment/hot?type=0&id=' + musicId)
+            this.musicPic = musicPicInfo.songs[0].al.picUrl
+            this.musicUrl = musicInfo.data[0].url
+            this.musicComment = commentInfo.hotComments
+            this.isPlaying = true
+        },
+        play() {
+            this.isPlaying = true
+        },
+        pause() {
+            this.isPlaying = false
+        },
+        async playMV(mvid) {
+            const mvInfo = await axios.get('https://autumnfish.cn/mv/url?id=' + mvid)
+            this.mvUrl = mvInfo.data.url
+            this.isMVPlaying = true
+        },
+        hideMV() {
+            this.isMVPlaying = false
+        }
+    },
+
 }
 </script>
 
 <style lang="less">
-/*base*/
-body {
-    background: #fff;
+body,
+ul,
+dl,
+dd {
+    margin: 0;
+    padding: 0;
 }
 
-.btn {
-    display: inline-block;
-    padding: 4px 12px;
-    margin-bottom: 0;
-    font-size: 14px;
-    line-height: 20px;
-    text-align: center;
-    vertical-align: middle;
-    cursor: pointer;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-}
+.wrap {
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: url('./assets/images/bg.jpg') no-repeat;
+    background-size: 100% 100%;
 
-.btn-danger {
-    color: #fff;
-    background-color: #da4f49;
-    border: 1px solid #bd362f;
-}
+    .play_wrap {
+        width: 800px;
+        height: 544px;
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        margin-left: -400px;
+        margin-top: -272px;
 
-.btn-danger:hover {
-    color: #fff;
-    background-color: #bd362f;
-}
+        .video_con {
+            video {
+                position: fixed;
+                width: 800px;
+                height: 546px;
+                left: 50%;
+                top: 50%;
+                margin-top: -273px;
+                transform: translateX(-50%);
+                z-index: 990;
+            }
 
-.btn:focus {
-    outline: none;
-}
-
-.todo-container {
-    width: 600px;
-    margin: 0 auto;
-
-    .todo-wrap {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
+            .mask {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                left: 0;
+                top: 0;
+                z-index: 980;
+                background-color: rgba(0, 0, 0, 0.8);
+            }
+        }
     }
 }
 </style>
